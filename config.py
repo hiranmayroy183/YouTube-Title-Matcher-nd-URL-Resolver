@@ -10,7 +10,9 @@ BASE_DIR = Path(__file__).resolve().parent
 # Default File Paths
 DEFAULT_INPUT_FILE = "unique_music_names_A-Z_serial.txt"
 DEFAULT_OUTPUT_FILE = "links.txt"
+DEFAULT_URLS_FILE = "urls.txt"
 DEFAULT_CACHE_DIR = ".cache"
+
 DEFAULT_CACHE_FILE = ".cache/youtube_search_cache.json"
 DEFAULT_CHECKPOINT_FILE = ".cache/checkpoint.json"
 DEFAULT_LOG_FILE = "yt_matcher.log"

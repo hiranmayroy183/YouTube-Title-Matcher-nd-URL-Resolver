@@ -69,7 +69,8 @@ YT/
 ├── main.py                   # CLI entrypoint with live progress and status inspector
 ├── requirements.txt          # Python dependencies
 ├── pyproject.toml            # Package and build specifications
-├── links.txt                 # Generated output file (Original Title | URL)
+├── links.txt                 # Output file (Original Title | URL)
+├── urls.txt                  # Output file (URLs only line-by-line, no titles/numbering)
 ├── unique_music_names_A-Z_serial.txt # Source list of 669 music titles
 ├── yt_matcher.log            # General activity log
 ├── errors.log                # Dedicated warnings and error diagnostics log
@@ -78,7 +79,8 @@ YT/
     ├── test_normalizer.py    # Tests for normalization, fluff removal, and scripts
     ├── test_matcher.py       # Tests for scoring accuracy and edge case tolerance
     ├── test_searcher.py      # Tests for response parsing and dataclass serialization
-    └── test_cache.py         # Tests for cache hit/miss and atomic persistence
+    ├── test_cache.py         # Tests for cache hit/miss and atomic persistence
+    └── test_processor.py     # Tests for dual file generation and resume
 ```
 
 ---
@@ -107,23 +109,24 @@ python main.py
 ## 💻 CLI Usage & Commands
 
 ```text
-usage: main.py [-h] [-i INPUT] [-o OUTPUT] [-t THRESHOLD] [-w WORKERS]
-               [-d DELAY] [-l LIMIT] [--cache-file CACHE_FILE]
-               [--no-cache] [--no-resume] [--strip-numbers]
-               [--log-file LOG_FILE] [--error-log ERROR_LOG]
-               [--status] [-v]
+usage: main.py [-h] [-i INPUT] [-o OUTPUT] [-u URLS_OUTPUT]
+               [-t THRESHOLD] [-w WORKERS] [-d DELAY] [-l LIMIT]
+               [--cache-file CACHE_FILE] [--no-cache] [--no-resume]
+               [--strip-numbers] [--log-file LOG_FILE]
+               [--error-log ERROR_LOG] [--status] [-v]
 
 options:
   -h, --help            Show this help message and exit
   -i, --input INPUT     Path to input file (default: unique_music_names_A-Z_serial.txt)
-  -o, --output OUTPUT   Path to output file (default: links.txt)
+  -o, --output OUTPUT   Path to output links file (Title | URL) (default: links.txt)
+  -u, --urls-output     Path to output file with only URLs line after line (default: urls.txt)
   -t, --threshold FLOAT Minimum confidence threshold between 0.0 and 1.0 (default: 0.65)
   -w, --workers INT     Number of concurrent worker threads (default: 4)
   -d, --delay FLOAT     Delay in seconds per worker request for rate limiting (default: 0.2)
   -l, --limit INT       Process only the first N titles (useful for testing)
   --cache-file PATH     Path to persistent JSON search cache file
   --no-cache            Disable disk search caching
-  --no-resume           Start fresh and overwrite existing links.txt
+  --no-resume           Start fresh and overwrite existing files
   --strip-numbers       Strip leading serial numbers ('1. ') in links.txt
   --log-file PATH       Path to general log file (default: yt_matcher.log)
   --error-log PATH      Path to dedicated error log file (default: errors.log)
@@ -150,20 +153,16 @@ options:
 
 - **Process a Custom File:**
   ```bash
-  python main.py -i my_playlist.txt -o my_links.txt
+  python main.py -i my_playlist.txt -o my_links.txt -u my_urls.txt
   ```
 
 ---
 
-## 📋 Output Format
+## 📋 Dual Output Format
 
-The output file ([links.txt](file:///c:/Users/WDAGUtilityAccount/Desktop/YT/links.txt)) preserves the exact input entry order:
+Every execution automatically generates two separate files in the exact same order as the input file:
 
-```text
-Original Title | YouTube Video URL
-```
-
-### Sample Output:
+### 1. `links.txt` (Title + YouTube URL)
 ```text
 1. 'Sooraj Dooba Hain' FULL VIDEO SONG_ Arijit singh Aditi Singh Sharma _ T-SERIES | https://www.youtube.com/watch?v=nJZcbidTutE
 2. 2nd Nayok (Official Music Video) _ Pritom Hasan _ Nuhash Humayun Malaika _ Mir Rabby | https://www.youtube.com/watch?v=MfSQfNyWVAI
@@ -176,6 +175,20 @@ Original Title | YouTube Video URL
 ...
 669. 🎵Benche Thakar Gaan _🎤Anupam Roy _ United Mix | https://www.youtube.com/watch?v=Qo885OOwM9g
 ```
+
+### 2. `urls.txt` (Only URLs line after line, no titles, no numbering)
+```text
+https://www.youtube.com/watch?v=nJZcbidTutE
+https://www.youtube.com/watch?v=MfSQfNyWVAI
+https://www.youtube.com/watch?v=Ja168gMpb3o
+https://www.youtube.com/watch?v=JFUoE0ArWd4
+https://www.youtube.com/watch?v=F8zqVO8UqTM
+...
+NOT_FOUND
+...
+https://www.youtube.com/watch?v=Qo885OOwM9g
+```
+
 
 ---
 

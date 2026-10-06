@@ -21,6 +21,7 @@ from config import (
     DEFAULT_CONFIDENCE_THRESHOLD,
     DEFAULT_MAX_WORKERS,
     DEFAULT_OUTPUT_FILE,
+    DEFAULT_URLS_FILE,
     DEFAULT_REQUEST_DELAY,
     DEFAULT_CHECKPOINT_FILE,
 )
@@ -62,6 +63,7 @@ class BatchProcessor:
         confidence_threshold: float = DEFAULT_CONFIDENCE_THRESHOLD,
         max_workers: int = DEFAULT_MAX_WORKERS,
         output_file: str = DEFAULT_OUTPUT_FILE,
+        urls_file: Optional[str] = DEFAULT_URLS_FILE,
         checkpoint_file: Optional[str] = None,
         resume: bool = True,
         preserve_numbers: bool = True,
@@ -75,9 +77,11 @@ class BatchProcessor:
         self.max_workers = max_workers
         self.checkpoint_file = Path(checkpoint_file or DEFAULT_CHECKPOINT_FILE)
         self.output_file = Path(output_file)
+        self.urls_file = Path(urls_file or DEFAULT_URLS_FILE)
         self.resume = resume
         self.preserve_numbers = preserve_numbers
         self.progress_callback = progress_callback
+
 
         self._lock = threading.Lock()
         self._pause_event = threading.Event()
@@ -321,6 +325,7 @@ class BatchProcessor:
         """
         Atomically writes links.txt preserving the exact input order.
         """
+        # 1. Write title + link file
         self.output_file.parent.mkdir(parents=True, exist_ok=True)
         temp_file = self.output_file.with_suffix(".tmp")
         try:
@@ -337,6 +342,20 @@ class BatchProcessor:
             os.replace(temp_file, self.output_file)
         except Exception as e:
             logger.error(f"Error writing output file {self.output_file}: {e}")
+
+        # 2. Write URLs-only file (no titles, no numbering)
+        self.urls_file.parent.mkdir(parents=True, exist_ok=True)
+        temp_urls = self.urls_file.with_suffix(".tmp")
+        try:
+            with open(temp_urls, "w", encoding="utf-8") as f:
+                for res in results:
+                    if res is None:
+                        continue
+                    f.write(f"{res.url}\n")
+            os.replace(temp_urls, self.urls_file)
+        except Exception as e:
+            logger.error(f"Error writing URLs-only file {self.urls_file}: {e}")
+
 
     def process_all(self, entries: List[TitleEntry]) -> List[ProcessResult]:
         """

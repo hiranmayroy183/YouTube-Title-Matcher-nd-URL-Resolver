@@ -26,6 +26,7 @@ from cache import SearchCache
 from config import (
     DEFAULT_INPUT_FILE,
     DEFAULT_OUTPUT_FILE,
+    DEFAULT_URLS_FILE,
     DEFAULT_CACHE_FILE,
     DEFAULT_LOG_FILE,
     DEFAULT_ERROR_LOG_FILE,
@@ -34,6 +35,7 @@ from config import (
     DEFAULT_MAX_WORKERS,
     DEFAULT_REQUEST_DELAY,
 )
+
 from matcher import TitleMatcher
 from processor import BatchProcessor
 from searcher import YouTubeSearcher
@@ -95,7 +97,12 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument(
         "-o", "--output",
         default=DEFAULT_OUTPUT_FILE,
-        help="Path to the output links file.",
+        help="Path to the output links file (Title | URL).",
+    )
+    parser.add_argument(
+        "-u", "--urls-output",
+        default=DEFAULT_URLS_FILE,
+        help="Path to the output file containing only URLs line after line.",
     )
     parser.add_argument(
         "-t", "--threshold",
@@ -171,6 +178,7 @@ def display_status(args: argparse.Namespace) -> None:
     print("         YouTube Music Matcher - Current Status")
     print("=" * 70)
     out_path = Path(args.output)
+    urls_path = Path(args.urls_output)
     ckpt_path = Path(DEFAULT_CHECKPOINT_FILE)
     cache_path = Path(args.cache_file)
 
@@ -179,20 +187,21 @@ def display_status(args: argparse.Namespace) -> None:
             lines = [l.strip() for l in f if l.strip()]
         matched = sum(1 for l in lines if not l.endswith(" | NOT_FOUND"))
         not_found = len(lines) - matched
-        print(f"Output File:          {out_path.resolve()}")
-        print(f"Total Processed:      {len(lines)} titles")
-        print(f"Matched Videos:       {matched} ({(matched/len(lines)*100):.1f}%)" if lines else "0")
-        print(f"Not Found:            {not_found} ({(not_found/len(lines)*100):.1f}%)" if lines else "0")
+        print(f"Links File (Title | URL): {out_path.resolve()}")
+        print(f"URLs File (Links Only):   {urls_path.resolve()}")
+        print(f"Total Processed:          {len(lines)} titles")
+        print(f"Matched Videos:           {matched} ({(matched/len(lines)*100):.1f}%)" if lines else "0")
+        print(f"Not Found:                {not_found} ({(not_found/len(lines)*100):.1f}%)" if lines else "0")
     else:
-        print(f"Output File:          Not found ({out_path})")
+        print(f"Output File:              Not found ({out_path})")
 
     if ckpt_path.exists():
         try:
             import json
             with open(ckpt_path, "r", encoding="utf-8") as f:
                 ckpt = json.load(f)
-            print(f"\nCheckpoint Timestamp: {ckpt.get('timestamp')}")
-            print(f"Status Completed:     {'YES' if ckpt.get('is_completed') else 'IN PROGRESS'}")
+            print(f"\nCheckpoint Timestamp:     {ckpt.get('timestamp')}")
+            print(f"Status Completed:         {'YES' if ckpt.get('is_completed') else 'IN PROGRESS'}")
         except Exception:
             pass
 
@@ -201,12 +210,12 @@ def display_status(args: argparse.Namespace) -> None:
             import json
             with open(cache_path, "r", encoding="utf-8") as f:
                 cache_data = json.load(f)
-            print(f"Cached Search Queries:{len(cache_data)}")
+            print(f"Cached Search Queries:    {len(cache_data)}")
         except Exception:
             pass
 
-    print(f"\nGeneral Log:          {Path(args.log_file).resolve()}")
-    print(f"Dedicated Error Log:  {Path(args.error_log).resolve()}")
+    print(f"\nGeneral Log:              {Path(args.log_file).resolve()}")
+    print(f"Dedicated Error Log:      {Path(args.error_log).resolve()}")
     print("=" * 70)
 
 
@@ -221,18 +230,19 @@ def main():
     print("=" * 70)
     print("         YouTube Music Title Matcher & URL Resolver")
     print("=" * 70)
-    print(f"Input file:           {args.input}")
-    print(f"Output file:          {args.output}")
-    print(f"Confidence threshold: {args.threshold * 100:.1f}%")
-    print(f"Concurrent workers:   {args.workers}")
-    print(f"Rate limit delay:     {args.delay}s")
-    print(f"Search caching:       {'Disabled' if args.no_cache else 'Enabled'}")
-    print(f"Resume mode:          {'Disabled' if args.no_resume else 'Enabled'}")
-    print(f"Preserve exact line:  {not args.strip_numbers}")
-    print(f"General log file:     {args.log_file}")
-    print(f"Dedicated error log:  {args.error_log}")
+    print(f"Input file:               {args.input}")
+    print(f"Links file (Title | URL): {args.output}")
+    print(f"URLs file (Links only):   {args.urls_output}")
+    print(f"Confidence threshold:     {args.threshold * 100:.1f}%")
+    print(f"Concurrent workers:       {args.workers}")
+    print(f"Rate limit delay:         {args.delay}s")
+    print(f"Search caching:           {'Disabled' if args.no_cache else 'Enabled'}")
+    print(f"Resume mode:              {'Disabled' if args.no_resume else 'Enabled'}")
+    print(f"Preserve exact line:      {not args.strip_numbers}")
+    print(f"General log file:         {args.log_file}")
+    print(f"Dedicated error log:      {args.error_log}")
     if args.limit:
-        print(f"Limit:                First {args.limit} items")
+        print(f"Limit:                    First {args.limit} items")
     print("=" * 70)
 
     try:
@@ -260,9 +270,11 @@ def main():
         confidence_threshold=args.threshold,
         max_workers=args.workers,
         output_file=args.output,
+        urls_file=args.urls_output,
         resume=not args.no_resume,
         preserve_numbers=not args.strip_numbers,
     )
+
 
     start_time = time.time()
     try:
@@ -295,9 +307,11 @@ def main():
     print(f"Total Execution Time:   {total_time:.1f} seconds")
     if total_time > 0 and total_processed > 0:
         print(f"Processing Speed:       {total_processed / total_time:.2f} titles/second")
-    print(f"Results File:           {Path(args.output).resolve()}")
-    print(f"General Log:            {Path(args.log_file).resolve()}")
-    print(f"Dedicated Error Log:    {Path(args.error_log).resolve()}")
+    print(f"Links File (Title | URL): {Path(args.output).resolve()}")
+    print(f"URLs File (Links Only):   {Path(args.urls_output).resolve()}")
+    print(f"General Log:              {Path(args.log_file).resolve()}")
+    print(f"Dedicated Error Log:      {Path(args.error_log).resolve()}")
+
     print("=" * 70 + "\n")
 
 
