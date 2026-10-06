@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "yt-music-matcher"
+version = "1.0.0"
+description = "Fast, intelligent music title matching and YouTube URL resolver without official API."
+readme = "README.md"
+requires-python = ">=3.9"
+license = {text = "MIT"}
+authors = [
+    {name = "Developer"}
+]
+keywords = ["youtube", "music", "fuzzy-matching", "nlp", "innertube", "url-resolver"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "requests>=2.28.0",
+    "rapidfuzz>=3.0.0",
+]
+
+[project.scripts]
+yt-matcher = "main:main"
+
+[tool.setuptools]
+py-modules = [
+    "config",
+    "normalizer",
+    "matcher",
+    "searcher",
+    "cache",
+    "processor",
+    "main",
+]
